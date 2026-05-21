@@ -139,8 +139,8 @@ def create_multitask_datafetcher(config, train_transform, test_transform):
 
     train_csv = os.path.join(dataset_dir, 'train_set.csv')
     if not os.path.exists(train_csv): train_csv = os.path.join(dataset_dir, 'train_set.csv')
-    test_csv = os.path.join(dataset_dir, 'probe_set.csv')
-    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'probe_set.csv')
+    test_csv = os.path.join(dataset_dir, 'test_set.csv')
+    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'test_set.csv')
 
     train_ds = PhotometricDataset(train_csv, dataset_dir, train_transform, config.get('type', 'albedo'))
     test_ds = PhotometricDataset(test_csv, dataset_dir, test_transform, config.get('type', 'albedo'))
@@ -161,8 +161,8 @@ def create_concatv2_multitask_datafetcher(config, train_transform, test_transfor
     dataset_dir = config['dataset_dir']
     train_csv = os.path.join(dataset_dir, 'train_set.csv')
     if not os.path.exists(train_csv): train_csv = os.path.join(dataset_dir, 'dataset', 'train_set.csv')
-    test_csv = os.path.join(dataset_dir, 'probe_set.csv')
-    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'dataset', 'probe_set.csv')
+    test_csv = os.path.join(dataset_dir, 'test_set.csv')
+    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'dataset', 'test_set.csv')
 
   
     train_ds = ConcatCustomExrDatasetV2(train_csv, dataset_dir, train_transform)
