@@ -138,12 +138,17 @@ def create_multitask_datafetcher(config, train_transform, test_transform):
     dataset_dir = config['dataset_dir']
 
     train_csv = os.path.join(dataset_dir, 'train_set.csv')
-    if not os.path.exists(train_csv): train_csv = os.path.join(dataset_dir, 'train_set.csv')
-    test_csv = os.path.join(dataset_dir, 'test_set.csv')
-    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'test_set.csv')
+    test_csv  = os.path.join(dataset_dir, 'test_set.csv')
 
-    train_ds = PhotometricDataset(train_csv, dataset_dir, train_transform, config.get('type', 'albedo'))
-    test_ds = PhotometricDataset(test_csv, dataset_dir, test_transform, config.get('type', 'albedo'))
+    # Kaggle dataset tách ảnh theo subfolder: Albedo/, Normal_Map/, Depth_Map/
+    # Nếu subfolder tồn tại thì dùng, ngược lại fallback về dataset_dir (cấu trúc cũ)
+    type_mode = config.get('type', 'albedo')
+    _subdir_map = {'albedo': 'Albedo', 'normalmap': 'Normal_Map', 'depthmap': 'Depth_Map'}
+    _subdir = os.path.join(dataset_dir, _subdir_map.get(type_mode, ''))
+    image_root = _subdir if os.path.isdir(_subdir) else dataset_dir
+
+    train_ds = PhotometricDataset(train_csv, image_root, train_transform, type_mode)
+    test_ds  = PhotometricDataset(test_csv,  image_root, test_transform,  type_mode)
 
     use_sampler = config.get('use_sampler', False)
     if use_sampler:
