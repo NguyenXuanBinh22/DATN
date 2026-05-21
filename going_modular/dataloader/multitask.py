@@ -59,7 +59,7 @@ class PhotometricDataset(Dataset):
 class ConcatCustomExrDatasetV2(Dataset):
     def __init__(self, csv_file, root_dir, transform=None):
         if not os.path.exists(csv_file):
-            alt_csv = os.path.join(os.path.dirname(csv_file), 'dataset', os.path.basename(csv_file))
+            alt_csv = os.path.join(os.path.dirname(csv_file), os.path.basename(csv_file))
             if os.path.exists(alt_csv): csv_file = alt_csv
         self.df = pd.read_csv(csv_file)
         self.root_dir = root_dir
@@ -136,10 +136,11 @@ class UniqueIdBatchSampler(Sampler):
 
 def create_multitask_datafetcher(config, train_transform, test_transform):
     dataset_dir = config['dataset_dir']
-    train_csv = os.path.join(dataset_dir, 'train_split.csv')
-    if not os.path.exists(train_csv): train_csv = os.path.join(dataset_dir, 'dataset', 'train_split.csv')
-    test_csv = os.path.join(dataset_dir, 'probe_split.csv')
-    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'dataset', 'probe_split.csv')
+
+    train_csv = os.path.join(dataset_dir, 'train_set.csv')
+    if not os.path.exists(train_csv): train_csv = os.path.join(dataset_dir, 'train_set.csv')
+    test_csv = os.path.join(dataset_dir, 'probe_set.csv')
+    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'probe_set.csv')
 
     train_ds = PhotometricDataset(train_csv, dataset_dir, train_transform, config.get('type', 'albedo'))
     test_ds = PhotometricDataset(test_csv, dataset_dir, test_transform, config.get('type', 'albedo'))
@@ -158,10 +159,10 @@ def create_multitask_datafetcher(config, train_transform, test_transform):
 
 def create_concatv2_multitask_datafetcher(config, train_transform, test_transform):
     dataset_dir = config['dataset_dir']
-    train_csv = os.path.join(dataset_dir, 'train_split.csv')
-    if not os.path.exists(train_csv): train_csv = os.path.join(dataset_dir, 'dataset', 'train_split.csv')
-    test_csv = os.path.join(dataset_dir, 'probe_split.csv')
-    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'dataset', 'probe_split.csv')
+    train_csv = os.path.join(dataset_dir, 'train_set.csv')
+    if not os.path.exists(train_csv): train_csv = os.path.join(dataset_dir, 'dataset', 'train_set.csv')
+    test_csv = os.path.join(dataset_dir, 'probe_set.csv')
+    if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'dataset', 'probe_set.csv')
 
   
     train_ds = ConcatCustomExrDatasetV2(train_csv, dataset_dir, train_transform)

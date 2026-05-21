@@ -5,8 +5,9 @@ import datetime
 class ExperimentManager:
     def __init__(self, conf):
         # 1. Tạo đường dẫn gốc: experiments/Tên_Thí_Nghiệm
-        # VD: .../experiments/Single_ALBEDO_Shuffle
-        self.exp_dir = os.path.join(conf['dataset_dir'], 'experiments', conf['note'])
+        # output_dir tách khỏi dataset_dir để hỗ trợ môi trường read-only (Kaggle)
+        base_dir = conf.get('output_dir', conf['dataset_dir'])
+        self.exp_dir = os.path.join(base_dir, 'experiments', conf['note'])
 
         # 2. Định nghĩa các thư mục con
         self.ckpt_dir = os.path.join(self.exp_dir, 'checkpoints')
