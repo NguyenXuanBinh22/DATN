@@ -134,11 +134,11 @@ class UniqueIdBatchSampler(Sampler):
     def __len__(self): return len(self.labels) // self.batch_size
 
 
-def create_multitask_datafetcher(config, train_transform, test_transform):
+def create_multitask_datafetcher(config, train_transform, test_transform, file_train='train_set.csv', file_test='test_set.csv'):
     dataset_dir = config['dataset_dir']
 
-    train_csv = os.path.join(dataset_dir, 'train_set.csv')
-    test_csv  = os.path.join(dataset_dir, 'test_set.csv')
+    train_csv = os.path.join(dataset_dir, file_train)
+    test_csv  = os.path.join(dataset_dir, file_test)
 
     # Kaggle dataset tách ảnh theo subfolder: Albedo/, Normal_Map/, Depth_Map/
     # Nếu subfolder tồn tại thì dùng, ngược lại fallback về dataset_dir (cấu trúc cũ)
@@ -162,11 +162,11 @@ def create_multitask_datafetcher(config, train_transform, test_transform):
     return train_dl, test_dl, train_ds.weightclass
 
 
-def create_concatv2_multitask_datafetcher(config, train_transform, test_transform):
+def create_concatv2_multitask_datafetcher(config, train_transform, test_transform, file_train='train_set.csv', file_test='test_set.csv'):
     dataset_dir = config['dataset_dir']
-    train_csv = os.path.join(dataset_dir, 'train_set.csv')
+    train_csv = os.path.join(dataset_dir, file_train)
     if not os.path.exists(train_csv): train_csv = os.path.join(dataset_dir, 'dataset', 'train_set.csv')
-    test_csv = os.path.join(dataset_dir, 'test_set.csv')
+    test_csv = os.path.join(dataset_dir, file_test)
     if not os.path.exists(test_csv): test_csv = os.path.join(dataset_dir, 'dataset', 'test_set.csv')
 
   
