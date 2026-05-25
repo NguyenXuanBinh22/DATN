@@ -53,6 +53,53 @@ def compute_id_auc(dataloader, model, device) -> dict:
     return auc_scores
 
 
+def compute_id_auc_gallery_probe(gallery_dl, probe_dl, model, device) -> dict:
+    """
+    Verification AUC theo chuẩn gallery-probe.
+
+    Với mỗi cặp (probe_i, gallery_j):
+      label = 1 nếu cùng identity, 0 nếu khác
+      score  = cosine_sim(probe_emb_i, gallery_emb_j)
+
+    Returns {'id_cosine': float, 'id_euclidean': float}
+    """
+    g_ids, g_emb = _collect_embeddings(gallery_dl, model, device)
+    p_ids, p_emb = _collect_embeddings(probe_dl,   model, device)
+
+    cos_sim  = torch.mm(p_emb, g_emb.t())          # [P, G]
+    euc_dist = torch.cdist(p_emb, g_emb, p=2)      # [P, G]
+
+    labels = (p_ids.unsqueeze(1) == g_ids.unsqueeze(0)).int().flatten().numpy()
+
+    try:
+        auc_cos = roc_auc_score(labels, cos_sim.flatten().numpy())
+        auc_euc = roc_auc_score(labels, -euc_dist.flatten().numpy())
+    except Exception as e:
+        print(f'Lỗi tính gallery-probe AUC: {e}')
+        auc_cos = auc_euc = 0.0
+
+    return {'id_cosine': auc_cos, 'id_euclidean': auc_euc}
+
+
+def compute_rank1_gallery_probe(gallery_dl, probe_dl, model, device) -> float:
+    """
+    Rank-1 Identification Accuracy theo chuẩn gallery-probe.
+
+    Với mỗi probe i: tìm gallery j có cosine similarity cao nhất.
+    Đúng nếu identity[gallery_j] == identity[probe_i].
+
+    Returns rank1_acc: float trong [0, 1]
+    """
+    g_ids, g_emb = _collect_embeddings(gallery_dl, model, device)
+    p_ids, p_emb = _collect_embeddings(probe_dl,   model, device)
+
+    cos_sim          = torch.mm(p_emb, g_emb.t())  # [P, G]
+    top1_gallery_idx = cos_sim.argmax(dim=1)        # [P]
+    predicted_ids    = g_ids[top1_gallery_idx]      # [P]
+
+    return (predicted_ids == p_ids).float().mean().item()
+
+
 def compute_rank1(dataloader, model, device) -> float:
     """
     Tính Rank-1 Identification Accuracy.

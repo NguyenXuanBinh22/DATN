@@ -6,7 +6,7 @@ import pandas as pd
 import cv2
 
 class PhotometricDataset(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None, type_mode='albedo'):
+    def __init__(self, csv_file, root_dir, transform=None, type_mode='albedo', id_to_label=None):
         if not os.path.exists(csv_file):
             alt_csv = os.path.join(os.path.dirname(csv_file), 'dataset', os.path.basename(csv_file))
             if os.path.exists(alt_csv): csv_file = alt_csv
@@ -18,10 +18,14 @@ class PhotometricDataset(Dataset):
             'albedo': 'albedo_map_new_crop.exr.npy',
             'normalmap': 'normal_map_new_crop.exr.npy',
             'depthmap': 'depth_map_new_crop.exr.npy',
-        
+
         }
-        self.unique_ids = sorted(self.df['id'].unique())
-        self.id_to_label = {id_val: i for i, id_val in enumerate(self.unique_ids)}
+        if id_to_label is not None:
+            self.unique_ids  = sorted(id_to_label.keys())
+            self.id_to_label = id_to_label
+        else:
+            self.unique_ids  = sorted(self.df['id'].unique())
+            self.id_to_label = {id_val: i for i, id_val in enumerate(self.unique_ids)}
         self.labels_list = [self.id_to_label[row['id']] for _, row in self.df.iterrows()]
         self.weightclass = {}
 
@@ -183,3 +187,47 @@ def create_concatv2_multitask_datafetcher(config, train_transform, test_transfor
 
     test_dl = DataLoader(test_ds, batch_size=config['batch_size'], shuffle=False, num_workers=2)
     return train_dl, test_dl
+
+
+def create_eval_loaders(
+    config,
+    transform,
+    gallery_csv_name: str = 'gallery_split.csv',
+    probe_csv_name:   str = 'probe_split.csv',
+):
+    """
+    Tạo gallery DataLoader (reference) và probe DataLoader (query) với shared identity mapping.
+
+    Hai dataset dùng cùng id_to_label nên label comparison gallery vs probe luôn nhất quán,
+    kể cả khi hai split có tập identity không hoàn toàn giống nhau.
+    """
+    dataset_dir = config['dataset_dir']
+    type_mode   = config.get('type', 'albedo')
+    batch_size  = config.get('batch_size', 32)
+
+    _subdir_map = {'albedo': 'Albedo', 'normalmap': 'Normal_Map', 'depthmap': 'Depth_Map'}
+    _subdir    = os.path.join(dataset_dir, _subdir_map.get(type_mode, ''))
+    image_root = _subdir if os.path.isdir(_subdir) else dataset_dir
+
+    gallery_csv = os.path.join(dataset_dir, gallery_csv_name)
+    probe_csv   = os.path.join(dataset_dir, probe_csv_name)
+
+    if not os.path.exists(gallery_csv):
+        raise FileNotFoundError(f'Gallery CSV không tìm thấy: {gallery_csv}')
+    if not os.path.exists(probe_csv):
+        raise FileNotFoundError(f'Probe CSV không tìm thấy: {probe_csv}')
+
+    gdf = pd.read_csv(gallery_csv)
+    pdf = pd.read_csv(probe_csv)
+    all_ids       = sorted(set(gdf['id'].unique()) | set(pdf['id'].unique()))
+    shared_id_map = {id_val: i for i, id_val in enumerate(all_ids)}
+
+    gallery_ds = PhotometricDataset(gallery_csv, image_root, transform, type_mode, id_to_label=shared_id_map)
+    probe_ds   = PhotometricDataset(probe_csv,   image_root, transform, type_mode, id_to_label=shared_id_map)
+
+    gallery_dl = DataLoader(gallery_ds, batch_size=batch_size, shuffle=False, num_workers=2)
+    probe_dl   = DataLoader(probe_ds,   batch_size=batch_size, shuffle=False, num_workers=2)
+
+    print(f'Gallery: {len(gallery_ds)} ảnh | Probe: {len(probe_ds)} ảnh')
+    print(f'Shared identity space: {len(shared_id_map)} identities')
+    return gallery_dl, probe_dl

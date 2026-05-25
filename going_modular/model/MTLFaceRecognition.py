@@ -104,9 +104,7 @@ class MTLFaceRecognition(torch.nn.Module):
         x_facial_hair = self.facial_hair_head(x_facial_hair)
         x_spectacles = self.spectacles_head(x_spectacles)
         return x_id, x_gender, x_pose, x_emotion, x_facial_hair, x_spectacles
-
-
-    
+     
     def get_embedding(self, x):
         (
             (x_spectacles, x_non_spectacles),
