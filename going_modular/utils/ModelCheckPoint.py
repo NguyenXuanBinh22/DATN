@@ -13,7 +13,7 @@ class ModelCheckpoint:
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir, exist_ok=True)
 
-    def __call__(self, model, optimizer, epoch, metrics=None, scheduler=None):
+    def __call__(self, model, optimizer, epoch, metrics=None, scheduler=None, extra_state=None):
         # 1. Luôn lưu 'last_model.pth' (Model mới nhất)
         last_path = os.path.join(self.output_dir, 'last_model.pth')
 
@@ -25,6 +25,8 @@ class ModelCheckpoint:
         }
         if scheduler:
             state['scheduler_state_dict'] = scheduler.state_dict()
+        if extra_state:
+            state.update(extra_state)
 
         torch.save(state, last_path)
 
