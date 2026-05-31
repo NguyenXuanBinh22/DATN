@@ -12,6 +12,8 @@ class MIMobileNetV3(nn.Module):
 
     def __init__(self, model_name: str = 'mobilenetv3_large_100', pretrained: bool = True):
         super().__init__()
+        # features_only=True — tức là bỏ phần head (pooling + classifier), 
+        # chỉ lấy feature maps ở các stage
         self.backbone = timm.create_model(model_name, pretrained=pretrained, features_only=True)
 
         # Lấy số channels của feature map cuối cùng bằng dummy forward
@@ -23,7 +25,7 @@ class MIMobileNetV3(nn.Module):
         # Adapter: align channels về 512, giữ nguyên spatial size
         self.adapter_conv = nn.Conv2d(out_channels, self.target_channels, kernel_size=1, bias=False)
         self.adapter_bn   = nn.BatchNorm2d(self.target_channels)
-        self.adapter_act  = nn.PReLU(self.target_channels)
+        self.adapter_act  = nn.Hardswish()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         feat = self.backbone(x)[-1]                          # (B, C_last, H, W)
