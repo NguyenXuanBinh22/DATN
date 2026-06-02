@@ -61,7 +61,7 @@ class PhotometricDataset(Dataset):
 
 
 class ConcatCustomExrDatasetV2(Dataset):
-    def __init__(self, csv_file, root_dir, transform=None):
+    def __init__(self, csv_file, root_dir, transform=None, id_to_label=None):
         if not os.path.exists(csv_file):
             alt_csv = os.path.join(os.path.dirname(csv_file), os.path.basename(csv_file))
             if os.path.exists(alt_csv): csv_file = alt_csv
@@ -75,8 +75,12 @@ class ConcatCustomExrDatasetV2(Dataset):
             'normal': 'normal_map_new_crop.exr.npy'
         }
 
-        self.unique_ids = sorted(self.df['id'].unique())
-        self.id_to_label = {id_val: i for i, id_val in enumerate(self.unique_ids)}
+        if id_to_label is not None:
+            self.unique_ids  = sorted(id_to_label.keys())
+            self.id_to_label = id_to_label
+        else:
+            self.unique_ids  = sorted(self.df['id'].unique())
+            self.id_to_label = {id_val: i for i, id_val in enumerate(self.unique_ids)}
         self.labels_list = [self.id_to_label[row['id']] for _, row in self.df.iterrows()]
 
     def __len__(self): return len(self.df)
@@ -222,8 +226,12 @@ def create_eval_loaders(
     all_ids       = sorted(set(gdf['id'].unique()) | set(pdf['id'].unique()))
     shared_id_map = {id_val: i for i, id_val in enumerate(all_ids)}
 
-    gallery_ds = PhotometricDataset(gallery_csv, image_root, transform, type_mode, id_to_label=shared_id_map)
-    probe_ds   = PhotometricDataset(probe_csv,   image_root, transform, type_mode, id_to_label=shared_id_map)
+    if type_mode == 'concat_v2':
+        gallery_ds = ConcatCustomExrDatasetV2(gallery_csv, dataset_dir, transform, id_to_label=shared_id_map)
+        probe_ds   = ConcatCustomExrDatasetV2(probe_csv,   dataset_dir, transform, id_to_label=shared_id_map)
+    else:
+        gallery_ds = PhotometricDataset(gallery_csv, image_root, transform, type_mode, id_to_label=shared_id_map)
+        probe_ds   = PhotometricDataset(probe_csv,   image_root, transform, type_mode, id_to_label=shared_id_map)
 
     gallery_dl = DataLoader(gallery_ds, batch_size=batch_size, shuffle=False, num_workers=2)
     probe_dl   = DataLoader(probe_ds,   batch_size=batch_size, shuffle=False, num_workers=2)
