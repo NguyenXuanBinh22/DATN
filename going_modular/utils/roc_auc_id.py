@@ -4,14 +4,21 @@ import numpy as np
 from sklearn.metrics import roc_auc_score
 
 
-def _collect_embeddings(dataloader, model, device):
-    """Thu thập toàn bộ embedding và identity label từ dataloader."""
+def _collect_embeddings(dataloader, model, device, modal_idx=None):
+    """Thu thập toàn bộ embedding và identity label từ dataloader.
+
+    modal_idx: truyền 0 hoặc 1 khi batch X có shape [B, 2, 3, H, W]
+               (concat loader) để slice đúng modal trước khi feed model.
+               None = không slice (single-modal loader, hành vi mặc định).
+    """
     model.eval()
     id_labels_list  = []
     embeddings_list = []
     with torch.no_grad():
         for X, y in dataloader:
             X = X.to(device)
+            if modal_idx is not None and X.dim() == 5:
+                X = X[:, modal_idx]  # [B, 2, 3, H, W] → [B, 3, H, W]
             emb = model.get_embedding(X)
             id_labels_list.append(y[:, 0])
             embeddings_list.append(emb.cpu())
@@ -20,7 +27,7 @@ def _collect_embeddings(dataloader, model, device):
     return all_ids, all_emb
 
 
-def compute_id_auc(dataloader, model, device) -> dict:
+def compute_id_auc(dataloader, model, device, modal_idx=None) -> dict:
     """
     Tính AUC nhận dạng khuôn mặt.
       - Cosine similarity AUC
@@ -29,7 +36,7 @@ def compute_id_auc(dataloader, model, device) -> dict:
     Returns:
         {'id_cosine': float, 'id_euclidean': float}
     """
-    all_ids, all_emb = _collect_embeddings(dataloader, model, device)
+    all_ids, all_emb = _collect_embeddings(dataloader, model, device, modal_idx)
 
     cosine_sim     = torch.mm(all_emb, all_emb.t())
     euclidean_dist = torch.cdist(all_emb, all_emb, p=2)
