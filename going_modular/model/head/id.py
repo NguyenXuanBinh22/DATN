@@ -53,7 +53,7 @@ class MagLinear(torch.nn.Module):
 
         # easy_margin = True để điều chỉnh cos_theta_m, nó sẽ bằng công thức trên nếu cos_theta>0 và không điều chỉnh gì nếu cos_theta<0
         # Cách này làm đơn giản việc tính toán
-        # Nếu muốn điều chỉnh thì cần thêm vào threshold nào đó (code của họ để mặc định easy_margin=False)
+        # Nếu muốn điều chỉnh thì cần thêm vào threshold nào đó (code của paper để mặc định easy_margin=False)
         if self.easy_margin:
             cos_theta_m = torch.where(cos_theta > 0, cos_theta_m, cos_theta)
         else:
