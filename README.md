@@ -1,279 +1,112 @@
-# FR-Photometric-Stereo
+# Hướng dẫn cài đặt & chạy notebook (`mobilev3_code/`)
 
-Multi-Task Face Recognition sử dụng dữ liệu Photometric Stereo (Albedo, Normal, Depth Map).
-
----
-
-## Giới thiệu
-
-Dự án nghiên cứu Multi-Task Learning cho Face Recognition, hỗ trợ các task: Face ID, Gender, Emotion, Pose, Facial Hair, Spectacles.
+Tài liệu này hướng dẫn cài đặt môi trường để chạy các notebook trong thư mục `mobilev3_code/`.
+Tất cả notebook được thiết kế để chạy trên **Google Colab** (có GPU): chúng tự clone repo,
+mount Google Drive và cài dependency. Phần cuối có hướng dẫn chạy local nếu cần.
 
 ---
 
-## Cấu trúc dự án
+## 1. Danh sách notebook
 
-### Thư mục gốc
-
-| File/Folder      | Mô tả                            |
-| ---------------- | -------------------------------- |
-| requirements.txt | Danh sách thư viện cần cài       |
-| going_modular/   | Thư mục chứa toàn bộ source code |
-
----
-
-### going_modular/data processing and cleaning/
-
-Các notebook xử lý và chuẩn bị dữ liệu.
-
-| File                                             | Mô tả                               |
-| ------------------------------------------------ | ----------------------------------- |
-| ALBEDO_PK_SAMPLER_ConvNextV2.ipynb               | Lấy mẫu và xử lý dữ liệu Albedo     |
-| NORMALMAP_PK_SAMPLER_ConvNextV2.ipynb            | Lấy mẫu và xử lý dữ liệu Normal Map |
-| Concat_ALBEDO_NORMAL_PK_SAMPLER_ConvNextV2.ipynb | Ghép dữ liệu Albedo + Normal        |
-| Concat_PK_Supler.ipynb                           | Notebook hỗ trợ ghép dữ liệu        |
-| albedo_sample.ipynb                              | Lấy mẫu dữ liệu Albedo đơn giản     |
-| albedo_random.ipynb                              | Lấy mẫu ngẫu nhiên Albedo           |
-| data_chuan_lan_cuoi.ipynb                        | Chuẩn hóa dữ liệu lần cuối          |
+| Notebook | Mục đích | Cần gì thêm |
+| -------- | -------- | ----------- |
+| `selected_Train_MobileNetV3_Standalone_Colab.ipynb` | Train MobileNetV3 trực tiếp với MagFace loss (không KD) | Dataset |
+| `KD_ConvNextV2_to_MobileNetV3_Colab.ipynb` | KD cơ bản: teacher ConvNeXtV2 → student MobileNetV3 | Dataset + **teacher checkpoint** |
+| `KD_RKD_ConvNextV2_to_MobileNetV3_Colab.ipynb` | KD + Relational KD | Dataset + teacher checkpoint |
+| `KD_RKD_v2_ConvNextV2_to_MobileNetV3_Colab.ipynb` | RKD biến thể v2 | Dataset + teacher checkpoint |
+| `KD_RKD_noKDcosine_ConvNextV2_to_MobileNetV3_Colab.ipynb` | RKD bỏ thành phần KD cosine | Dataset + teacher checkpoint |
+| `KD_RKD_Projector_ConvNextV2_to_MobileNetV3_Colab.ipynb` | RKD + ProjectionHead (512→1024) | Dataset + teacher checkpoint |
+| `KD_CrossModal_ConcatTeacher_to_MobileNetV3_Colab.ipynb` | KD cross-modal từ teacher ghép 2 modal | Dataset + **2 teacher checkpoint** |
+| `selected_(1_15_100_200)KD_CrossModal_ConcatTeacher_to_MobileNetV3_Colab.ipynb` | Bản tinh chỉnh trọng số loss của CrossModal | Dataset + 2 teacher checkpoint |
+| `EmbeddingSpaceAnalysis_Colab.ipynb` | Phân tích/visualize không gian embedding (UMAP) | Checkpoint đã train |
+| `selected_W8A8_Quantization_MobileNetV3_QAIHub_FromColab.ipynb` | Lượng tử hóa W8A8 qua Qualcomm AI Hub | Checkpoint/ONNX + **QAI Hub token** |
+| `selected_ver04_W8A16_Quantization_MobileNetV3_QAIHub_FromColab.ipynb` | Lượng tử hóa W8A16 qua Qualcomm AI Hub | Checkpoint/ONNX + QAI Hub token |
 
 ---
 
-### going_modular/dataloader/
+## 2. Yêu cầu chung (mọi notebook)
 
-| File         | Mô tả                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------ |
-| multitask.py | Dataset class cho single-modal và multi-modal (PhotometricDataset, ConcatCustomExrDataset) |
+1. **Tài khoản Google + Google Colab** (khuyến nghị bật GPU runtime: `Runtime → Change runtime type → GPU`).
+2. **Google Drive** chứa dataset, đã được mount vào `/content/drive`.
+3. **Dataset Photometric** đặt tại Drive, mặc định:
+   ```
+   /content/drive/MyDrive/Photometric_DB_Full/
+   ```
+   Có thể đổi qua biến `DRIVE_DATASET_DIR` trong cell **CONFIGURATION** của từng notebook.
 
----
+### Dependency được cài tự động trong notebook
 
-### going_modular/model/
+Các notebook tự chạy lệnh cài, **không cần cài tay** khi dùng Colab:
 
-| File                        | Mô tả                                                                      |
-| --------------------------- | -------------------------------------------------------------------------- |
-| MTLFaceRecognition.py       | Model MTL cho single-modal (1 loại ảnh)                                    |
-| ConcatMTLFaceRecognition.py | Model MTL cho multi-modal (ghép 3 loại ảnh)                                |
-| grl.py                      | Gradient Reversal Layer, đảo gradient khi backprop để học feature bất biến |
+| Notebook | Lệnh cài trong notebook |
+| -------- | ----------------------- |
+| Train / KD / RKD / CrossModal | `pip install -q albumentations==1.3.1 timm tabulate termcolor` |
+| Embedding analysis | `pip install -q albumentations==1.3.1 timm tabulate umap-learn` |
+| Quantization (W8A8 / W8A16) | `pip install -q 'qai-hub[torch]'` + `pip install -q albumentations==1.3.1 timm tabulate onnxruntime` |
 
----
-
-### going_modular/model/backbone/
-
-| File                | Mô tả                                                  |
-| ------------------- | ------------------------------------------------------ |
-| convnext_v2_mifr.py | Backbone ConvNeXt V2 kết hợp Feature Separation Module |
-| mifr.py             | Backbone ResNet với attention                          |
-| irse.py             | Backbone IR-SE (Improved ResNet)                       |
+`torch`, `torchvision`, `pandas`, `numpy`, `scikit-learn`, `tensorboard` đã có sẵn trên Colab.
 
 ---
 
-### going_modular/model/head/
+## 3. Cấu trúc dataset mong đợi
 
-Các head cho từng task.
-
-| File          | Mô tả                                            |
-| ------------- | ------------------------------------------------ |
-| id.py         | MagLinear head cho Face ID, dùng adaptive margin |
-| gender.py     | Head phân loại giới tính                         |
-| emotion.py    | Head phân loại cảm xúc                           |
-| pose.py       | Head phân loại tư thế                            |
-| facialhair.py | Head phát hiện râu                               |
-| spectacles.py | Head phát hiện kính                              |
-
----
-
-### going_modular/loss/
-
-| File                   | Mô tả                                                   |
-| ---------------------- | ------------------------------------------------------- |
-| MultiTaskLoss.py       | Loss tổng hợp cho single-modal, tự động cân bằng weight |
-| ConcatMultiTaskLoss.py | Loss tổng hợp cho multi-modal                           |
-| WeightClassMagLoss.py  | MagFace loss có class weighting cho Face ID             |
-| focalloss/FocalLoss.py | Focal Loss cho dữ liệu mất cân bằng                     |
-
----
-
-### going_modular/train_eval/
-
-| File            | Mô tả                              |
-| --------------- | ---------------------------------- |
-| train.py        | Vòng lặp training cho single-modal |
-| concat_train.py | Vòng lặp training cho multi-modal  |
-
----
-
-### going_modular/utils/
-
-| File                                 | Mô tả                                                      |
-| ------------------------------------ | ---------------------------------------------------------- |
-| ExperimentManager.py                 | Quản lý experiment, tạo thư mục, lưu config, ghi log       |
-| metrics.py                           | Hiển thị progress, tính toán metrics                       |
-| roc_auc.py                           | Tính AUC cho các task                                      |
-| transforms.py                        | Custom augmentation (GaussianNoise, RandomResizedCropRect) |
-| ModelCheckPoint.py                   | Lưu model theo epoch và best metric                        |
-| MultiMetricEarlyStopping.py          | Early stopping theo nhiều metric                           |
-| PolynomialLRWarmup.py                | Learning rate scheduler polynomial warmup                  |
-| WarmupCosineAnnealingWarmRestarts.py | Learning rate scheduler cosine annealing                   |
-
----
-
-## Cài đặt
-
-1. Clone repo
-2. Tạo virtual environment
-3. Cài requirements.txt
-4. Cài thêm PyTorch, timm, pandas, scikit-learn, tabulate, tensorboard
-
----
-
-## Định dạng dữ liệu
-
-CSV chứa các cột: id, session, Gender, Spectacles, Facial_Hair, Pose, Emotion
-
-Dữ liệu ảnh lưu dạng .npy trong thư mục theo cấu trúc: data/{id}/{session}/
-
----
-
-## Tham khảo
-
-- MagFace (CVPR 2021)
-- ConvNeXt V2 (CVPR 2023)
-- Multi-Task Learning Using Uncertainty to Weigh Losses (CVPR 2018)
-- Focal Loss (ICCV 2017)
-- Domain-Adversarial Training (JMLR 2016)
-
----
-
-## Sơ đồ kiến trúc
-
-### Kiến trúc tổng quan
+Notebook đọc các file CSV split trong thư mục dataset:
 
 ```
-Input (112x112)                         Output
-     |                                     |
-     v                                     v
-+-----------+                    +------------------+
-|  Albedo   |                    |    Face ID       |
-|  Normal   | --> Backbone -->   |    Gender        |
-|  Depth    |     (ConvNeXt)     |    Emotion       |
-+-----------+                    |    Pose          |
-                                 |    Facial Hair   |
-                                 |    Spectacles    |
-                                 +------------------+
+Photometric_DB_Full/
+├── train_split.csv      (hoặc train_set.csv / dataset/train_split.csv)
+├── gallery_split.csv
+├── probe_split.csv
+└── data/{id}/{session}/  ... ảnh .npy
 ```
 
-### Pipeline xử lý
+CSV tối thiểu phải có cột `id`; các notebook MTL/KD dùng thêm các cột task
+(`Gender`, `Spectacles`, `Facial_Hair`, `Pose`, `Emotion`). Xem thêm `README.md` ở thư mục gốc.
 
-```
-                    +---------------------------+
-                    |     Input Images          |
-                    | (Albedo, Normal, Depth)   |
-                    +-------------+-------------+
-                                  |
-                                  v
-                    +---------------------------+
-                    |   ConvNeXt V2 Backbone    |
-                    |   (Feature Extraction)    |
-                    +-------------+-------------+
-                                  |
-                                  v
-                    +---------------------------+
-                    | Feature Separation Module |
-                    |          (FSM)            |
-                    +-------------+-------------+
-                                  |
-          +-----------+-----------+-----------+-----------+
-          |           |           |           |           |
-          v           v           v           v           v
-     +--------+  +--------+  +--------+  +--------+  +--------+
-     |  ID    |  | Gender |  |Emotion |  |  Pose  |  | Specs  |
-     |  Head  |  |  Head  |  |  Head  |  |  Head  |  |  Head  |
-     +--------+  +--------+  +--------+  +--------+  +--------+
-          |           |           |           |           |
-          v           v           v           v           v
-     +--------+  +--------+  +--------+  +--------+  +--------+
-     |MagFace |  | Focal  |  | Focal  |  | Focal  |  | Focal  |
-     | Loss   |  |  Loss  |  |  Loss  |  |  Loss  |  |  Loss  |
-     +--------+  +--------+  +--------+  +--------+  +--------+
-          |           |           |           |           |
-          +-----------+-----------+-----------+-----------+
-                                  |
-                                  v
-                    +---------------------------+
-                    |    Multi-Task Loss        |
-                    |  (Auto Loss Weighting)    |
-                    +---------------------------+
-```
+---
 
-### Multi-Modal Fusion (Concat)
+## 4. Quy trình chạy
 
-```
-+----------+     +----------+     +----------+
-|  Normal  |     |  Albedo  |     |  Depth   |
-|   MTL    |     |   MTL    |     |   MTL    |
-+----+-----+     +----+-----+     +----+-----+
-     |                |                |
-     |   +------------+------------+   |
-     |   |                         |   |
-     +---+-----------+-------------+---+
-                     |
-                     v
-              +-------------+
-              |   Concat    |
-              |  (512 x 3)  |
-              +------+------+
-                     |
-                     v
-              +-------------+
-              | Final Heads |
-              |   (1536)    |
-              +-------------+
-```
+### 4.1 Notebook training (Standalone / KD / RKD / CrossModal)
+Các notebook được lưu trong mục knowledge distillation, với các mục nhỏ thực nghiệm (được mô tả rõ trong chương Thực nghiệm của quyển đồ án kết hợp với các comment trong notebook)
+Link tập dữ liệu Photomestereo vào google drive và chỉnh sửa dataset drive và link github lưu trữ source_code nếu muốn
 
-### Cấu trúc thư mục
+### 4.2 Notebook Quantization (W8A8 / W8A16 — Qualcomm AI Hub)
 
-```
-FR_Photometric_stereo/
-|
-+-- requirements.txt
-+-- README.md
-|
-+-- going_modular/
-    |
-    +-- data processing and cleaning/
-    |   +-- *.ipynb (notebooks xử lý dữ liệu)
-    |
-    +-- dataloader/
-    |   +-- multitask.py
-    |
-    +-- model/
-    |   +-- MTLFaceRecognition.py
-    |   +-- ConcatMTLFaceRecognition.py
-    |   +-- grl.py
-    |   |
-    |   +-- backbone/
-    |   |   +-- convnext_v2_mifr.py
-    |   |   +-- mifr.py
-    |   |   +-- irse.py
-    |   |
-    |   +-- head/
-    |       +-- id.py, gender.py, emotion.py
-    |       +-- pose.py, facialhair.py, spectacles.py
-    |
-    +-- loss/
-    |   +-- MultiTaskLoss.py
-    |   +-- ConcatMultiTaskLoss.py
-    |   +-- WeightClassMagLoss.py
-    |   +-- focalloss/FocalLoss.py
-    |
-    +-- train_eval/
-    |   +-- train.py
-    |   +-- concat_train.py
-    |
-    +-- utils/
-        +-- ExperimentManager.py
-        +-- metrics.py, roc_auc.py
-        +-- transforms.py
-        +-- ModelCheckPoint.py
-        +-- MultiMetricEarlyStopping.py
-        +-- PolynomialLRWarmup.py
-        +-- WarmupCosineAnnealingWarmRestarts.py
-```
+Hai notebook này submit job lượng tử hóa lên **Qualcomm AI Hub**, nên cần **API token**.
+
+1. Lấy token tại <https://aihub.qualcomm.com> (đăng nhập → Account/Settings → API token).
+2. Lưu token vào **Colab Secrets**: panel bên trái `🔑 Secrets` → thêm key tên `QAI_HUB_TOKEN`, dán giá trị token, bật *Notebook access*.
+   Notebook đọc bằng:
+   ```python
+   from google.colab import userdata
+   QAI_HUB_TOKEN = userdata.get('QAI_HUB_TOKEN').strip()
+   ```
+   và tự cấu hình:
+   ```python
+   !qai-hub configure --api_token {QAI_HUB_TOKEN}
+   ```
+3. Chỉnh trong cell config:
+   - `DRIVE_DATASET_DIR` — dataset (dùng để hiệu chuẩn/calibration + đo accuracy).
+   - `OUTPUT_DIR` — nơi lưu model lượng tử hóa, ví dụ
+     `/content/drive/MyDrive/experiments/quantized_mobilenetv3/w8a16/ver04`.
+   - Đường dẫn model nguồn: ONNX đã export, hoặc `STUDENT_CKPT` (`.pth`) để trace lại.
+4. Chạy tuần tự: setup → compile/quantize job → inference job → so sánh accuracy
+   Float32 vs lượng tử hóa (đo AUC & Rank-1 local bằng `onnxruntime`).
+5. Kết quả: file ONNX/`.bin` đã lượng tử hóa + `qai_hub_model_ids.json` (lưu id các job) trong `OUTPUT_DIR`.
+
+---
+
+## 5. Tóm tắt dependency
+
+| Thư viện | Dùng cho |
+| -------- | -------- |
+| `torch`, `torchvision` | Model, training, ONNX export |
+| `timm` | Backbone `mobilenetv3_large_100`, `convnextv2_tiny` |
+| `albumentations==1.3.1` | Augmentation ảnh |
+| `pandas`, `numpy`, `scikit-learn` | Đọc CSV, xử lý dữ liệu, metric |
+| `tabulate` | Bảng kết quả |
+| `tensorboard` | Log training |
+| `termcolor` | Log màu |
+| `umap-learn` | Visualize embedding (chỉ notebook analysis) |
+| `qai-hub[torch]`, `onnxruntime`, `onnxscript` | Lượng tử hóa qua Qualcomm AI Hub |

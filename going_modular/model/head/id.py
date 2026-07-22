@@ -17,9 +17,9 @@ class MagLinear(torch.nn.Module):
         # uniform_(-1,1): đảm bảo phân phối đồng đều (uniform) trong khoảng [-1,1]
         # renorm_(2, 1, 1e-5): chuẩn hóa lại các giá trị theo 1 chiều cụ thể. 
         #   2: Chuẩn hóa theo chuẩn L2(Euclidean norm).
-        #   1: Thực hiện chuẩn hóa trên chiều thứ nhất của tensor (các hàng của ma trận self.weight)
+        #   1: Thực hiện chuẩn hóa trên chiều thứ nhất của tensor (các cột của ma trận self.weight)
         #   1e-5: Giá trị ngưỡng (epsilon) để tránh chia cho số 0
-        # Khi dùng chuẩn hóa này, mỗi hàng của ma trận trọng số sẽ được điều chỉnh sao cho norm của chúng không vượt quá một giá trị cụ thể (giới hạn bởi epsilon).
+        # Khi dùng chuẩn hóa này, mỗi cột của ma trận trọng số sẽ được điều chỉnh sao cho norm của chúng không vượt quá một giá trị cụ thể (giới hạn bởi epsilon).
         # Bản thân mỗi cột của ma trận này là ma trận weight của 1 neutron hay vector tâm của class identity.
         self.weight.data.uniform_(-1,1).renorm_(2, 1, 1e-5).mul_(1e5)
         
@@ -62,7 +62,7 @@ class MagLinear(torch.nn.Module):
             cos_theta_m = torch.where(cos_theta > threshold, cos_theta_m, cos_theta - mm)
             
         # Trả về các giá trị này để tính loss và accuracy
-        # [cos_theta, cos_theta_m] là logits của lớp này. Lý do thêm x_norm để phục vụ MagFace+ => Train không ?
+        # [cos_theta, cos_theta_m] là logits của lớp này. Lý do thêm x_norm để phục vụ MagFace+ => Train không 
         # cos_theta chính là accuracy, nó đo cosine similarity giữa vector tâm và feature vector.
         return [cos_theta, cos_theta_m], x_norm
  
